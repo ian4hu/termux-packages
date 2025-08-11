@@ -1,0 +1,165 @@
+diff --git a/bundle/nginx-1.25.3/auto/endianness b/bundle/nginx-1.25.3/auto/endianness
+index 1b552b6..45f9a0c 100644
+--- a/bundle/nginx-1.25.3/auto/endianness
++++ b/bundle/nginx-1.25.3/auto/endianness
+@@ -31,7 +31,18 @@ ngx_test="$CC $CC_TEST_FLAGS $CC_AUX_FLAGS \
+ 
+ eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"
+ 
+-if [ -x $NGX_AUTOTEST ]; then
++if [ "$NGX_CROSS" = "YES" ]; then
++    . $NGX_CROSSFILE
++    if [ "$endianness_CROSS" = "little" ]; then
++        echo " little endian"
++        have=NGX_HAVE_LITTLE_ENDIAN . auto/have
++    else
++        echo " big endian"
++    fi
++
++    rm -rf $NGX_AUTOTEST*
++
++elif [ -x $NGX_AUTOTEST ]; then
+     if $NGX_AUTOTEST >/dev/null 2>&1; then
+         echo " little endian"
+         have=NGX_HAVE_LITTLE_ENDIAN . auto/have
+diff --git a/bundle/nginx-1.25.3/auto/feature b/bundle/nginx-1.25.3/auto/feature
+index 3561f59..c4bed07 100644
+--- a/bundle/nginx-1.25.3/auto/feature
++++ b/bundle/nginx-1.25.3/auto/feature
+@@ -53,7 +53,7 @@ if [ -x $NGX_AUTOTEST ]; then
+ 
+         yes)
+             # /bin/sh is used to intercept "Killed" or "Abort trap" messages
+-            if /bin/sh -c $NGX_AUTOTEST >> $NGX_AUTOCONF_ERR 2>&1; then
++            if [ "$NGX_CROSS" = "YES" ] || bash -c $NGX_AUTOTEST >> $NGX_AUTOCONF_ERR 2>&1 ; then
+                 echo " found"
+                 ngx_found=yes
+ 
+@@ -68,7 +68,24 @@ if [ -x $NGX_AUTOTEST ]; then
+ 
+         value)
+             # /bin/sh is used to intercept "Killed" or "Abort trap" messages
+-            if /bin/sh -c $NGX_AUTOTEST >> $NGX_AUTOCONF_ERR 2>&1; then
++            if [ "$NGX_CROSS" = "YES" ]; then
++                eval crossval=\"\${`echo "feature_${ngx_feature_name}_CROSS" | sed 's| |_|g'`}\"
++                . $NGX_CROSSFILE
++                if [ -n "$crossval"  ]; then
++                    echo " found"
++                    ngx_found=yes
++
++                    cat << END >> $NGX_AUTO_CONFIG_H
++
++#ifndef $ngx_feature_name
++#define $ngx_feature_name  `echo $crossval`
++#endif
++
++END
++                else
++                    echo " found but is not working"
++                fi
++            elif /bin/sh -c $NGX_AUTOTEST >> $NGX_AUTOCONF_ERR 2>&1; then
+                 echo " found"
+                 ngx_found=yes
+ 
+diff --git a/bundle/nginx-1.25.3/auto/options b/bundle/nginx-1.25.3/auto/options
+index e6e0cd3..2697983 100644
+--- a/bundle/nginx-1.25.3/auto/options
++++ b/bundle/nginx-1.25.3/auto/options
+@@ -35,6 +35,8 @@ NGX_TEST_BUILD_SOLARIS_SENDFILEV=NO
+ 
+ NGX_PLATFORM=
+ NGX_WINE=
++NGX_CROSS=NO
++NGX_CROSSFILE=
+ 
+ EVENT_FOUND=NO
+ 
+@@ -203,7 +205,9 @@ do
+         --user=*)                        NGX_USER="$value"          ;;
+         --group=*)                       NGX_GROUP="$value"         ;;
+ 
+-        --crossbuild=*)                  NGX_PLATFORM="$value"      ;;
++        --crossbuild=*)                  NGX_PLATFORM="$value"      ;
++                                         NGX_CROSS=YES              ;;
++        --crossfile=*)                   NGX_CROSSFILE="$value"     ;;
+ 
+         --build=*)                       NGX_BUILD="$value"         ;;
+         --builddir=*)                    NGX_OBJS="$value"          ;;
+@@ -441,6 +445,10 @@ cat << END
+   --group=GROUP                      set non-privileged group for
+                                      worker processes
+ 
++  --crossbuild=PLAT:VER:ARCH         crossbuild for specified
++                                     NGX_PLATFORM
++  --crossfile=NAME                   file name in auto/cross
++
+   --build=NAME                       set build name
+   --builddir=DIR                     set build directory
+ 
+diff --git a/bundle/nginx-1.25.3/auto/os/linux b/bundle/nginx-1.25.3/auto/os/linux
+index 02dcaf2..4ef2788 100644
+--- a/bundle/nginx-1.25.3/auto/os/linux
++++ b/bundle/nginx-1.25.3/auto/os/linux
+@@ -18,7 +18,13 @@ CC_AUX_FLAGS="$cc_aux_flags -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64"
+ 
+ # Linux kernel version
+ 
+-version=$((`uname -r \
++if [ "$NGX_CROSS" = "YES" ]; then
++    kern_version=`echo $NGX_PLATFORM | cut -d ':' -f 2`
++else
++    kern_version=`uname -r`
++fi
++
++version=$((`echo $kern_version \
+     | sed -n -e 's/^\([0-9][0-9]*\)\.\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/ \
+                                                  \1*256*256+\2*256+\3/p' \
+              -e 's/^\([0-9][0-9]*\)\.\([0-9][0-9]*\).*/\1*256*256+\2*256/p'`))
+diff --git a/bundle/nginx-1.25.3/auto/types/sizeof b/bundle/nginx-1.25.3/auto/types/sizeof
+index 480d8cf..fdc0b85 100644
+--- a/bundle/nginx-1.25.3/auto/types/sizeof
++++ b/bundle/nginx-1.25.3/auto/types/sizeof
+@@ -40,7 +40,13 @@ eval "$ngx_test >> $NGX_AUTOCONF_ERR 2>&1"
+ 
+ 
+ if [ -x $NGX_AUTOTEST ]; then
+-    ngx_size=`$NGX_AUTOTEST`
++    if [ "$NGX_CROSS" = "YES" ]; then
++        crossvar=`echo "sizeof_${ngx_type}_CROSS" | sed -e 's| |_|g' -e 's|\*|ptr|g'`
++        . $NGX_CROSSFILE
++        eval ngx_size=\"\${$crossvar}\"
++    else
++        ngx_size=`$NGX_AUTOTEST`
++    fi
+     echo " $ngx_size bytes"
+ fi
+ 
+diff --git a/bundle/nginx-1.25.3/auto/unix b/bundle/nginx-1.25.3/auto/unix
+index 6b44fc9..d8a0b69 100644
+--- a/bundle/nginx-1.25.3/auto/unix
++++ b/bundle/nginx-1.25.3/auto/unix
+@@ -152,7 +152,7 @@ fi
+ ngx_feature="crypt()"
+ ngx_feature_name=
+ ngx_feature_run=no
+-ngx_feature_incs=
++ngx_feature_incs="#include <crypt.h>"
+ ngx_feature_path=
+ ngx_feature_libs=
+ ngx_feature_test="crypt(\"test\", \"salt\");"
+diff --git a/configure b/configure
+index 5d7d717..3681dd3 100755
+--- a/configure
++++ b/configure
+@@ -783,7 +783,10 @@ _END_
+                     "INSTALL_F='$root_dir/build/install -m 0644'";
+         }
+ 
+-        if (defined $cc) {
++        my $luajit_cross = $ENV{LUAJIT_CROSS};
++        if (defined($luajit_cross)) {
++            $extra_opts .= $luajit_cross;
++        } elsif (defined $cc) {
+             $extra_opts .= " CC='$cc'";
+ 
+         } else {
