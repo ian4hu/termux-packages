@@ -12,11 +12,24 @@ on:
     - 'scripts/build/setup/termux_setup_golang.sh'
 
 jobs:
+  scan_golang_pkgs:
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.scan.outputs.packages }}
+    steps:
+      - name: Scan Packages for termux_setup_golang
+        id: scan
+        run: |
+          readarray -t TERMUX_PACKAGE_DIRECTORIES < <(jq --raw-output 'del(.pkg_format) | keys | .[]' repo.json)
+          readarray -t PACKAGES < <(grep -rl termux_setup_golang --include=build.sh "${TERMUX_PACKAGE_DIRECTORIES[@]}" | cut -d/ -f2 | sort -u || :) || :
+          echo "packages=$(printf '%s\n' "${PACKAGES[@]}" | jq -R . | jq -s . | jq -c)" >> "$GITHUB_OUTPUT"
   golang_validation:
     runs-on: ubuntu-latest
+    needs: scan_golang_pkgs
     strategy:
       matrix:
         target_arch: [aarch64, arm, i686, x86_64]
+        package: ${{ fromJSON(needs.scan_golang_pkgs.outputs.packages) }}
       fail-fast: false
     steps:
     - name: Clone repository
@@ -32,10 +45,10 @@ jobs:
         sudo apt install ninja-build
         ./scripts/free-space.sh
     - name: Golang validation
-      run: ./scripts/bin/golang-validation "${{ matrix.target_arch }}" || exit 1
+      run: ./build-package.sh -I -f -a "${{ matrix.target_arch }}" "${{ matrix.package }}" || exit 1
     - name: Upload report artifact
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: report-${{ matrix.target_arch }}
+        name: report-${{ matrix.target_arch }}-${{ matrix.package }}
         path: /tmp/golang-validation-report.txt
