@@ -38,6 +38,8 @@ jobs:
         HOME: /home/builder
         PWD: /home/builder/termux-packages
         TERMUX_PKGS__BUILD__REPO_ROOT_DIR: /home/builder/termux-packages
+      user: builder
+      workdir: /home/builder/termux-packages
     needs: scan_golang_pkgs
     strategy:
       matrix:
