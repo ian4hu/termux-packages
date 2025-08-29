@@ -32,7 +32,7 @@ jobs:
     needs: scan_golang_pkgs
     strategy:
       matrix:
-        target_arch: [aarch64, arm, i686, x86_64]
+#        target_arch: [aarch64, arm, i686, x86_64]
         package: ${{ fromJSON(needs.scan_golang_pkgs.outputs.packages) }}
       fail-fast: false
     steps:
@@ -48,8 +48,12 @@ jobs:
         ./scripts/setup-android-sdk.sh
         sudo apt install ninja-build
         ./scripts/free-space.sh
-    - name: Golang validation
-      run: ./build-package.sh -I -f -a "${{ matrix.target_arch }}" "${{ matrix.package }}" || exit 1
+    - name: Golang validation - ${{ matrix.package }}
+      run: |
+        ./build-package.sh -I -f -a "aarch64" "${{ matrix.package }}" || exit 1
+        ./build-package.sh -I -f -a "arm" "${{ matrix.package }}" || exit 1
+        ./build-package.sh -I -f -a "i686" "${{ matrix.package }}" || exit 1
+        ./build-package.sh -I -f -a "x86_64" "${{ matrix.package }}" || exit 1
     - name: Upload report artifact
       if: always()
       uses: actions/upload-artifact@v4
