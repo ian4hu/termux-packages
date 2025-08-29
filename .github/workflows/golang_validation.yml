@@ -50,7 +50,7 @@ jobs:
       run: |
         true || ./scripts/setup-ubuntu.sh
         true || ./scripts/setup-android-sdk.sh
-        sudo apt install ninja-build
+        true || sudo apt install ninja-build
         ./scripts/free-space.sh
     - name: Golang validation - ${{ matrix.package }}
       run: |
