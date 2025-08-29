@@ -54,13 +54,11 @@ jobs:
     #     ./scripts/free-space.sh
     - name: Golang validation - ${{ matrix.package }}
       run: |
-        ./build-package.sh -I -f -a "aarch64" "${{ matrix.package }}" || exit 1
-        ./build-package.sh -I -f -a "arm" "${{ matrix.package }}" || exit 1
-        ./build-package.sh -I -f -a "i686" "${{ matrix.package }}" || exit 1
-        ./build-package.sh -I -f -a "x86_64" "${{ matrix.package }}" || exit 1
+        ./scripts/setup-android-sdk.sh
+        ./build-package.sh -I -C -a "all" "${{ matrix.package }}" || exit 1
     - name: Upload report artifact
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: report-${{ matrix.target_arch }}-${{ matrix.package }}
+        name: report-${{ matrix.package }}
         path: /tmp/golang-validation-report.txt
