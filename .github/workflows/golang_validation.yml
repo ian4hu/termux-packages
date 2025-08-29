@@ -29,6 +29,10 @@ jobs:
           echo "packages=$(printf '%s\n' "${PACKAGES[@]}" | jq -R . | jq -s . | jq -c)" >> "$GITHUB_OUTPUT"
   golang_validation:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/termux/package-builder:latest
+      volumes:
+        - .:/home/builder/termux-packages
     needs: scan_golang_pkgs
     strategy:
       matrix:
@@ -44,8 +48,8 @@ jobs:
       run: echo 65535 | sudo tee /proc/sys/kernel/pid_max
     - name: Prepare environment
       run: |
-        ./scripts/setup-ubuntu.sh
-        ./scripts/setup-android-sdk.sh
+        true || ./scripts/setup-ubuntu.sh
+        true || ./scripts/setup-android-sdk.sh
         sudo apt install ninja-build
         ./scripts/free-space.sh
     - name: Golang validation - ${{ matrix.package }}
