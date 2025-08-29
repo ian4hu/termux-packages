@@ -46,12 +46,12 @@ jobs:
         fetch-depth: 0
     # - name: Set process id limit for 32-bit builds depending on aosp-libs
     #   run: echo 65535 | sudo tee /proc/sys/kernel/pid_max
-    - name: Prepare environment
-      run: |
-        true || ./scripts/setup-ubuntu.sh
-        true || ./scripts/setup-android-sdk.sh
-        true || sudo apt install ninja-build
-        ./scripts/free-space.sh
+    # - name: Prepare environment
+    #   run: |
+    #     true || ./scripts/setup-ubuntu.sh
+    #     true || ./scripts/setup-android-sdk.sh
+    #     true || sudo apt install ninja-build
+    #     ./scripts/free-space.sh
     - name: Golang validation - ${{ matrix.package }}
       run: |
         ./build-package.sh -I -f -a "aarch64" "${{ matrix.package }}" || exit 1
