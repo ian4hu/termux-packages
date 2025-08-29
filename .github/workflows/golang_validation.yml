@@ -60,7 +60,7 @@ jobs:
     #     ./scripts/free-space.sh
     - name: Golang validation - ${{ matrix.package }}
       run: |
-        ./build-package.sh -I -C -a "all" "${{ matrix.package }}" || exit 1
+        cd /home/builder/termux-packages && ./build-package.sh -I -C -a "all" "${{ matrix.package }}" || exit 1
     - name: Upload report artifact
       if: always()
       uses: actions/upload-artifact@v4
