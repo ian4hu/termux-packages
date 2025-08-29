@@ -32,7 +32,7 @@ jobs:
     container:
       image: ghcr.io/termux/package-builder:latest
       volumes:
-        - .:/home/builder/termux-packages
+        - ${{ github.workspace }}:/home/builder/termux-packages
     needs: scan_golang_pkgs
     strategy:
       matrix:
