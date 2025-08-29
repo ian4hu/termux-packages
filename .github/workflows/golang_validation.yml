@@ -18,9 +18,9 @@ jobs:
       packages: ${{ steps.scan.outputs.packages }}
     steps:
       - name: Clone repository
-      uses: actions/checkout@v5
-      with:
-        fetch-depth: 0
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - name: Scan Packages for termux_setup_golang
         id: scan
         run: |
