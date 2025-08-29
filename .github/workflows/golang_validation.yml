@@ -37,7 +37,7 @@ jobs:
       env:
         HOME: /home/builder
         PWD: /home/builder/termux-packages
-        TERMUX_PKGS__BUILD__IS_DOCKER_BUILD: true
+        TERMUX_PKGS__BUILD__REPO_ROOT_DIR: /home/builder/termux-packages
     needs: scan_golang_pkgs
     strategy:
       matrix:
