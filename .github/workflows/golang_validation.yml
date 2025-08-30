@@ -61,7 +61,7 @@ jobs:
     - name: Golang validation - ${{ matrix.package }}
       run: |
         pwd
-        export HOME=/home/builder/termux-packages
+        export HOME=/home/builder
         cd /home/builder/termux-packages && ./build-package.sh -I -C -a "all" "${{ matrix.package }}" || exit 1
     - name: Upload report artifact
       if: always()
